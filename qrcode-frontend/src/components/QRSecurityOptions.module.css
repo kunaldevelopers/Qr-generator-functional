@@ -1,0 +1,68 @@
+.securityContainer {
+  background-color: #f8f9fa;
+  border-radius: 8px;
+  padding: 20px;
+  margin-bottom: 20px;
+}
+
+.sectionTitle {
+  font-size: 1.2rem;
+  margin-bottom: 15px;
+  color: #333;
+}
+
+.securityOptions {
+  display: flex;
+  flex-direction: column;
+  gap: 15px;
+}
+
+.securityOption {
+  margin-bottom: 10px;
+}
+
+.checkboxLabel {
+  display: flex;
+  align-items: center;
+  cursor: pointer;
+  font-weight: 500;
+}
+
+.checkboxLabel input {
+  margin-right: 8px;
+}
+
+.passwordInput,
+.expiryInput,
+.maxScansInput {
+  margin-top: 10px;
+  margin-left: 24px;
+}
+
+.formControl {
+  width: 100%;
+  max-width: 300px;
+  padding: 8px 12px;
+  border: 1px solid #ced4da;
+  border-radius: 4px;
+  font-size: 1rem;
+}
+
+/* Add error styling */
+.inputError {
+  border-color: #dc3545 !important;
+  background-color: #fff8f8;
+}
+
+.errorHint {
+  color: #dc3545;
+  font-size: 0.8rem;
+  margin-top: 5px;
+  display: block;
+}
+
+.securityNote {
+  margin-top: 5px;
+  font-size: 0.85rem;
+  color: #6c757d;
+}

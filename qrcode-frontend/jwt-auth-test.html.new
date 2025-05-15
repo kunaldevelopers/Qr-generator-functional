@@ -1,0 +1,326 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>JWT Auth Test</title>
+    <style>
+      body {
+        font-family: Arial, sans-serif;
+        max-width: 800px;
+        margin: 0 auto;
+        padding: 20px;
+        line-height: 1.6;
+      }
+      .container {
+        background-color: #f5f5f5;
+        border-radius: 8px;
+        padding: 20px;
+        margin-bottom: 20px;
+      }
+      button {
+        background-color: #4caf50;
+        border: none;
+        color: white;
+        padding: 10px 20px;
+        text-align: center;
+        text-decoration: none;
+        display: inline-block;
+        font-size: 16px;
+        margin: 4px 2px;
+        cursor: pointer;
+        border-radius: 4px;
+      }
+      input {
+        width: 100%;
+        padding: 12px 20px;
+        margin: 8px 0;
+        box-sizing: border-box;
+        border: 2px solid #ccc;
+        border-radius: 4px;
+      }
+      pre {
+        background-color: #f0f0f0;
+        padding: 10px;
+        border-radius: 4px;
+        overflow-x: auto;
+      }
+      .error {
+        color: red;
+      }
+      .success {
+        color: green;
+      }
+    </style>
+  </head>
+  <body>
+    <h1>JWT Authentication Test</h1>
+    <p>
+      This page helps you test the JWT authentication system for the QR Code
+      Generator app.
+    </p>
+
+    <div class="container">
+      <h2>1. Register a New User</h2>
+      <input type="email" id="registerEmail" placeholder="Email" />
+      <input type="password" id="registerPassword" placeholder="Password" />
+      <button onclick="register()">Register</button>
+      <div id="registerResult"></div>
+    </div>
+
+    <div class="container">
+      <h2>2. Login</h2>
+      <input type="email" id="loginEmail" placeholder="Email" />
+      <input type="password" id="loginPassword" placeholder="Password" />
+      <button onclick="login()">Login</button>
+      <div id="loginResult"></div>
+    </div>
+
+    <div class="container">
+      <h2>3. Get User Info (Authenticated Request)</h2>
+      <button onclick="getUserInfo()">Get User Info</button>
+      <div id="userResult"></div>
+    </div>
+
+    <div class="container">
+      <h2>4. JWT Token</h2>
+      <p>Current JWT Token:</p>
+      <pre id="currentToken">None</pre>
+      <button onclick="clearToken()">Clear Token</button>
+    </div>
+
+    <div class="container">
+      <h2>5. Test QR Code API</h2>
+      <button onclick="createQRCode()">Create Test QR Code</button>
+      <button onclick="getQRCodes()">Fetch QR Codes</button>
+      <div id="qrResult"></div>
+    </div>
+
+    <script>
+      // API Base URL - should match the VITE_API_URL in the frontend/.env
+      const API_BASE_URL = "http://localhost:5000/api";
+
+      // Update token display
+      function updateTokenDisplay() {
+        const token = localStorage.getItem("token");
+        const tokenElement = document.getElementById("currentToken");
+        if (token) {
+          // Show first and last 10 characters
+          const tokenLength = token.length;
+          const displayToken =
+            tokenLength > 20
+              ? `${token.substring(0, 10)}...${token.substring(
+                  tokenLength - 10,
+                  tokenLength
+                )}`
+              : token;
+          tokenElement.textContent = displayToken;
+          tokenElement.title = token; // Show full token on hover
+        } else {
+          tokenElement.textContent = "None";
+        }
+      }
+
+      // Register a new user
+      async function register() {
+        const email = document.getElementById("registerEmail").value;
+        const password = document.getElementById("registerPassword").value;
+        const resultElement = document.getElementById("registerResult");
+
+        if (!email || !password) {
+          resultElement.innerHTML =
+            '<p class="error">Please enter both email and password</p>';
+          return;
+        }
+
+        try {
+          const response = await fetch(`${API_BASE_URL}/auth/register`, {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+            },
+            body: JSON.stringify({ email, password }),
+          });
+
+          const data = await response.json();
+
+          if (response.ok) {
+            localStorage.setItem("token", data.token);
+            localStorage.setItem("userId", data.userId);
+            localStorage.setItem("userEmail", data.email);
+            resultElement.innerHTML = `<p class="success">Registration successful! User ID: ${data.userId}</p>`;
+            updateTokenDisplay();
+          } else {
+            resultElement.innerHTML = `<p class="error">Error: ${
+              data.message || "Registration failed"
+            }</p>`;
+          }
+        } catch (error) {
+          resultElement.innerHTML = `<p class="error">Error: ${error.message}</p>`;
+        }
+      }
+
+      // Login
+      async function login() {
+        const email = document.getElementById("loginEmail").value;
+        const password = document.getElementById("loginPassword").value;
+        const resultElement = document.getElementById("loginResult");
+
+        if (!email || !password) {
+          resultElement.innerHTML =
+            '<p class="error">Please enter both email and password</p>';
+          return;
+        }
+
+        try {
+          const response = await fetch(`${API_BASE_URL}/auth/login`, {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+            },
+            body: JSON.stringify({ email, password }),
+          });
+
+          const data = await response.json();
+
+          if (response.ok) {
+            localStorage.setItem("token", data.token);
+            localStorage.setItem("userId", data.userId);
+            localStorage.setItem("userEmail", data.email);
+            resultElement.innerHTML = `<p class="success">Login successful! User ID: ${data.userId}</p>`;
+            updateTokenDisplay();
+          } else {
+            resultElement.innerHTML = `<p class="error">Error: ${
+              data.message || "Login failed"
+            }</p>`;
+          }
+        } catch (error) {
+          resultElement.innerHTML = `<p class="error">Error: ${error.message}</p>`;
+        }
+      }
+
+      // Get user info
+      async function getUserInfo() {
+        const resultElement = document.getElementById("userResult");
+        const token = localStorage.getItem("token");
+
+        if (!token) {
+          resultElement.innerHTML =
+            '<p class="error">You need to login first</p>';
+          return;
+        }
+
+        try {
+          const response = await fetch(`${API_BASE_URL}/auth/me`, {
+            method: "GET",
+            headers: {
+              Authorization: `Bearer ${token}`,
+            },
+          });
+
+          const data = await response.json();
+
+          if (response.ok) {
+            resultElement.innerHTML = `<p class="success">User info retrieved successfully:</p>
+                        <pre>${JSON.stringify(data, null, 2)}</pre>`;
+          } else {
+            resultElement.innerHTML = `<p class="error">Error: ${
+              data.message || "Failed to get user info"
+            }</p>`;
+          }
+        } catch (error) {
+          resultElement.innerHTML = `<p class="error">Error: ${error.message}</p>`;
+        }
+      }
+
+      // Create test QR code
+      async function createQRCode() {
+        const resultElement = document.getElementById("qrResult");
+        const token = localStorage.getItem("token");
+
+        if (!token) {
+          resultElement.innerHTML =
+            '<p class="error">You need to login first</p>';
+          return;
+        }
+
+        try {
+          const response = await fetch(`${API_BASE_URL}/qrcodes`, {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+              Authorization: `Bearer ${token}`,
+            },
+            body: JSON.stringify({
+              text: "Test QR Code from JWT Auth Test",
+              qrImage: "data:image/png;base64,TestImageData",
+            }),
+          });
+
+          const data = await response.json();
+
+          if (response.ok) {
+            resultElement.innerHTML = `<p class="success">QR Code created successfully:</p>
+                        <pre>${JSON.stringify(data, null, 2)}</pre>`;
+          } else {
+            resultElement.innerHTML = `<p class="error">Error: ${
+              data.message || "Failed to create QR code"
+            }</p>`;
+          }
+        } catch (error) {
+          resultElement.innerHTML = `<p class="error">Error: ${error.message}</p>`;
+        }
+      }
+
+      // Get QR codes
+      async function getQRCodes() {
+        const resultElement = document.getElementById("qrResult");
+        const token = localStorage.getItem("token");
+
+        if (!token) {
+          resultElement.innerHTML =
+            '<p class="error">You need to login first</p>';
+          return;
+        }
+
+        try {
+          const response = await fetch(`${API_BASE_URL}/qrcodes`, {
+            method: "GET",
+            headers: {
+              Authorization: `Bearer ${token}`,
+            },
+          });
+
+          const data = await response.json();
+
+          if (response.ok) {
+            const count = Array.isArray(data) ? data.length : "unknown";
+            resultElement.innerHTML = `<p class="success">Retrieved ${count} QR codes:</p>
+                        <pre>${JSON.stringify(data, null, 2)}</pre>`;
+          } else {
+            resultElement.innerHTML = `<p class="error">Error: ${
+              data.message || "Failed to get QR codes"
+            }</p>`;
+          }
+        } catch (error) {
+          resultElement.innerHTML = `<p class="error">Error: ${error.message}</p>`;
+        }
+      }
+
+      // Clear token
+      function clearToken() {
+        localStorage.removeItem("token");
+        localStorage.removeItem("userId");
+        localStorage.removeItem("userEmail");
+        updateTokenDisplay();
+        document.getElementById("userResult").innerHTML =
+          "<p>Logged out. Token cleared.</p>";
+      }
+
+      // Initialize
+      document.addEventListener("DOMContentLoaded", () => {
+        updateTokenDisplay();
+      });
+    </script>
+  </body>
+</html>
